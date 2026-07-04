@@ -1,0 +1,33 @@
+[package]
+name = "lignite"
+version = "0.3.2"
+edition = "2021"
+rust-version = "1.74"
+description = "An embeddable log-structured merge-tree key/value storage engine"
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://example.invalid/lignite"
+keywords = ["database", "lsm", "storage-engine", "key-value", "embedded"]
+categories = ["database-implementations", "data-structures"]
+
+[lib]
+name = "lignite"
+path = "src/lib.rs"
+
+[features]
+default = ["checksums"]
+# Enable full-record CRC verification on the write-ahead log and SSTable blocks.
+checksums = []
+# Emit verbose internal tracing to stderr (used by the integration harness).
+trace = []
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "unwind"
+
+[profile.test]
+opt-level = 1
+
+[dev-dependencies]

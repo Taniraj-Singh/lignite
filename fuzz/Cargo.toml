@@ -1,0 +1,42 @@
+# cargo-fuzz harness for lignite.
+#
+# This is a standalone crate (note the empty [workspace] table below), so it is
+# NOT built by `cargo build` / `cargo test` in the parent repository. It requires
+# a nightly toolchain and cargo-fuzz:
+#
+#     cargo install cargo-fuzz
+#     cargo +nightly fuzz run differential
+#     cargo +nightly fuzz run table_roundtrip
+
+[package]
+name = "lignite-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1", features = ["derive"] }
+
+[dependencies.lignite]
+path = ".."
+
+[[bin]]
+name = "differential"
+path = "fuzz_targets/differential.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "table_roundtrip"
+path = "fuzz_targets/table_roundtrip.rs"
+test = false
+doc = false
+bench = false
+
+# Standalone: do not join the parent package's (absent) workspace.
+[workspace]
