@@ -1,13 +1,13 @@
 //! Differential fuzz target: drive the database with an arbitrary operation
-//! stream and assert it matches a `BTreeMap` oracle at every checkpoint.
+//! stream and assert it matches a `BTreeMap` oracle.
 //!
-//! The fuzzer interprets the raw input as a sequence of `(op, key)` byte pairs
-//! over a small key space, so overwrites and deletes of the same key are dense
-//! and repeatedly scattered across flushed tables and compaction output. Any
-//! divergence between `Db::get` and the oracle — a stale value, a resurrected
-//! delete, a lost write — trips an assertion and is reported as a crash.
+//! The input bytes are interpreted as a sequence of `(op, key)` pairs over a
+//! small key space, so the same key is repeatedly overwritten, deleted, flushed
+//! into separate tables and compacted. After replaying the stream every key is
+//! read back and compared to the oracle; any divergence — a stale value, a
+//! resurrected delete, a lost write — aborts and is reported as a crash.
 //!
-//! Run: `cargo +nightly fuzz run differential`
+//! Build/run: `cargo +nightly fuzz run db_differential_fuzzer`
 
 #![no_main]
 
@@ -53,7 +53,7 @@ fuzz_target!(|data: &[u8]| {
         }
     }
 
-    // Flush so all state resides in tables, then check every key.
+    // Flush so all state lives in tables, then verify every key.
     let _ = db.flush();
     for k in 0..KEY_SPACE {
         let key = format!("k{k:02}").into_bytes();

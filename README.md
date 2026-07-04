@@ -124,13 +124,21 @@ and full scan against an in-memory `BTreeMap` oracle. These run as part of
 `cargo test`.
 
 A [`cargo-fuzz`](https://github.com/rust-fuzz/cargo-fuzz) harness lives in
-[`fuzz/`](fuzz/) (a standalone crate, so it does not affect `cargo build`). It
-requires a nightly toolchain:
+[`fuzz/`](fuzz/) (a standalone crate, so it does not affect `cargo build`), wired
+for [ClusterFuzzLite](https://google.github.io/clusterfuzzlite/) via
+[`.clusterfuzzlite/`](.clusterfuzzlite/). Run locally with a nightly toolchain:
 
 ```
 cargo install cargo-fuzz
-cargo +nightly fuzz run differential      # differential oracle over an op stream
-cargo +nightly fuzz run table_roundtrip   # SSTable build/read roundtrip
+cargo +nightly fuzz run db_differential_fuzzer   # differential oracle over an op stream
+cargo +nightly fuzz run sstable_parse_fuzzer     # SSTable reader on arbitrary bytes
+cargo +nightly fuzz run wal_parse_fuzzer         # WAL reader on arbitrary bytes
+```
+
+Reproduce a known crash with a saved input:
+
+```
+cargo +nightly fuzz run db_differential_fuzzer poc/db_differential_fuzzer_crash
 ```
 
 ## Configuration
