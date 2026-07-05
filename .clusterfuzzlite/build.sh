@@ -10,6 +10,7 @@ cargo fuzz build -O
 
 FUZZ_TARGET_OUTPUT_DIR="$SRC/lignite/fuzz/target/x86_64-unknown-linux-gnu/release"
 
-for target in db_differential_fuzzer sstable_parse_fuzzer wal_parse_fuzzer; do
+for target in db_differential_fuzzer sstable_parse_fuzzer wal_parse_fuzzer \
+              block_codec_fuzzer archive_parse_fuzzer; do
     cp "$FUZZ_TARGET_OUTPUT_DIR/$target" "$OUT/"
 done

@@ -142,9 +142,7 @@ pub fn read_block(
     }
     match parse_compression(type_byte)? {
         CompressionType::None => Ok(Arc::new(contents.to_vec())),
-        other => Err(Error::Unsupported(format!(
-            "block compression {other:?} not supported by this build"
-        ))),
+        kind => Ok(Arc::new(crate::compress::decode(kind, contents)?)),
     }
 }
 

@@ -29,6 +29,14 @@ level-scoring picker.
   the value visible at the read's snapshot and skip deletions.
 - **SSTables** — delta-encoded data blocks, a two-level index, per-block CRC32C
   checksums, and configurable bloom filters.
+- **Block compression** — optional per-block RLE or LZ77 codecs (see the
+  `compress` module), stored under a self-describing tag and decoded transparently
+  on read; off by default.
+- **Optimistic transactions** — a read-your-writes staging buffer over a snapshot,
+  with key-granular conflict validation at commit (see the `txn` module).
+- **Logical backup/restore** — export a consistent snapshot to a single
+  checksummed archive byte string and import it into another instance (see the
+  `archive` module).
 - **Compaction** — merges overlapping runs, drops superseded versions, and
   discards tombstones once they reach the bottom level.
 - **Pluggable comparator and filter policy**.
@@ -58,6 +66,16 @@ Run the worked examples:
 ```
 cargo run --example kv_demo
 cargo run --example range_scan
+cargo run --example compression
+cargo run --example transactions
+cargo run --example archive_backup
+```
+
+A small interactive shell over the engine is available as a binary:
+
+```
+cargo run --bin lignite            # REPL on stdin
+cargo run --bin lignite script.txt # run a command script
 ```
 
 ## Architecture at a glance
@@ -96,12 +114,15 @@ or below the read's sequence number.
 | `memtable` | skiplist-backed in-memory write buffer |
 | `wal` | write-ahead log record framing, writer and reader |
 | `sstable` | block/table builders and readers, footer, filter block |
+| `compress` | block compression codecs (RLE, LZ77) and their dispatch |
 | `filter` | bloom filter policy |
 | `cache` | sharded LRU table/block cache |
 | `iterator` | the `InternalIterator` trait, merge/concat/empty iterators |
 | `version` | file metadata, versions, the version set, MANIFEST edits |
 | `compaction` | compaction execution and the level-scoring picker |
 | `batch` | write-batch encoding |
+| `txn` | optimistic transactions over snapshots and batches |
+| `archive` | portable, checksummed backup/restore format |
 | `snapshot` | snapshot handles and the live-snapshot registry |
 | `env` | storage environment abstraction (in-memory implementation) |
 | `db` | the public `Db` facade tying it all together |
@@ -133,6 +154,8 @@ cargo install cargo-fuzz
 cargo +nightly fuzz run db_differential_fuzzer   # differential oracle over an op stream
 cargo +nightly fuzz run sstable_parse_fuzzer     # SSTable reader on arbitrary bytes
 cargo +nightly fuzz run wal_parse_fuzzer         # WAL reader on arbitrary bytes
+cargo +nightly fuzz run block_codec_fuzzer       # compression codecs: decode + round-trip
+cargo +nightly fuzz run archive_parse_fuzzer     # archive reader on arbitrary bytes
 ```
 
 Reproduce a known crash with a saved input:

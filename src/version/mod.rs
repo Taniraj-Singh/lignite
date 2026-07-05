@@ -22,7 +22,7 @@ use crate::error::Result;
 use crate::filter::{BloomFilterPolicy, FilterPolicy};
 use crate::iterator::InternalIterator;
 use crate::key::{extract_user_key, InternalKeyComparator, SequenceNumber};
-use crate::options::{CompressionType, Options};
+use crate::options::Options;
 use crate::cache::ShardedCache;
 use crate::sstable::table::Table;
 use crate::sstable::table_builder::{TableBuildOptions, TableBuilder};
@@ -233,7 +233,7 @@ pub fn build_table(
     let build_opts = TableBuildOptions {
         block_size: options.block_size,
         block_restart_interval: options.block_restart_interval,
-        compression: CompressionType::None,
+        compression: options.compression,
         filter_policy,
         icmp: icmp.clone(),
     };

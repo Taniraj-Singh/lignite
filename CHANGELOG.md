@@ -12,6 +12,26 @@ follow semantic versioning once it reaches 1.0.
   multiple persisted tables. See [`ISSUE.md`](ISSUE.md). Tracked by the failing
   regression tests in `tests/mvcc_visibility.rs`.
 
+## [0.4.0]
+
+### Added
+
+- **Block compression** (`compress` module): self-contained RLE and LZ77 codecs
+  with hardened, bounds-checked decoders. Wired through the SSTable writer and
+  reader behind the per-block compression tag and selectable via
+  `Options.compression`; defaults to `None`, so existing images are unaffected.
+  New `CompressionType::Rle` and `CompressionType::Lz` variants.
+- **Optimistic transactions** (`txn` module): `Transaction` with a read-your-writes
+  buffer over a snapshot and key-granular conflict validation at commit.
+- **Archive backup/restore** (`archive` module): a portable, versioned, checksummed
+  byte format, plus `Db::export_archive` / `Db::import_archive` for consistent
+  logical backup and cross-instance transfer.
+- **`lignite` command-line shell** (`src/bin/lignite.rs`): a line-oriented REPL and
+  script runner over the engine.
+- New examples: `compression`, `transactions`, `archive_backup`.
+- New fuzz targets: `block_codec_fuzzer` and `archive_parse_fuzzer`, registered in
+  the ClusterFuzzLite build.
+
 ## [0.3.2]
 
 ### Added

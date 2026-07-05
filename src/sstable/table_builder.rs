@@ -100,7 +100,7 @@ impl TableBuilder {
             return;
         }
         let contents = self.data_block.finish().to_vec();
-        let handle = self.write_raw_block(&contents, CompressionType::None);
+        let handle = self.write_block(&contents, self.opts.compression);
         self.data_block.reset();
 
         // Index this block by its maximum key.
@@ -115,16 +115,26 @@ impl TableBuilder {
         }
     }
 
-    /// Append raw `contents` with a compression byte and masked CRC trailer,
-    /// returning a handle covering just the contents.
-    fn write_raw_block(&mut self, contents: &[u8], compression: CompressionType) -> BlockHandle {
-        let handle = BlockHandle::new(self.offset, contents.len() as u64);
-        self.file.extend_from_slice(contents);
+    /// Compress `contents` under `compression` (falling back to verbatim storage
+    /// when compression does not shrink it) and append the stored block.
+    fn write_block(&mut self, contents: &[u8], compression: CompressionType) -> BlockHandle {
+        let (kind, stored) = crate::compress::encode(compression, contents);
+        self.write_raw_block(&stored, kind)
+    }
+
+    /// Append already-encoded `stored` bytes with the given compression byte and a
+    /// masked CRC trailer, returning a handle covering just the stored bytes.
+    ///
+    /// The CRC is taken over the *stored* (possibly compressed) bytes plus the
+    /// type byte, matching the verification performed by the reader.
+    fn write_raw_block(&mut self, stored: &[u8], compression: CompressionType) -> BlockHandle {
+        let handle = BlockHandle::new(self.offset, stored.len() as u64);
+        self.file.extend_from_slice(stored);
         let type_byte = compression as u8;
-        let crc = crc32c::extend(crc32c::value(contents), &[type_byte]);
+        let crc = crc32c::extend(crc32c::value(stored), &[type_byte]);
         self.file.push(type_byte);
         encode_fixed32(&mut self.file, crc32c::mask(crc));
-        self.offset += (contents.len() + BLOCK_TRAILER_SIZE) as u64;
+        self.offset += (stored.len() + BLOCK_TRAILER_SIZE) as u64;
         handle
     }
 

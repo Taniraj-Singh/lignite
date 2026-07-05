@@ -5,17 +5,25 @@ use std::sync::Arc;
 
 /// Block compression algorithm recorded per SSTable block.
 ///
-/// Only [`CompressionType::None`] is wired through the current builder; the other
-/// variants exist so the on-disk format reserves their tag bytes.
+/// [`CompressionType::None`], [`CompressionType::Rle`] and [`CompressionType::Lz`]
+/// are implemented by the [`crate::compress`] module and can be both written and
+/// read. [`CompressionType::Snappy`] and [`CompressionType::Zstd`] are *reserved*:
+/// their tag bytes are recognised by the reader (so their presence is diagnosed
+/// rather than mistaken for corruption) but this build neither emits nor decodes
+/// them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum CompressionType {
     /// Store blocks verbatim.
     None = 0x0,
-    /// Snappy (reserved).
+    /// Snappy (reserved — recognised on read, never emitted).
     Snappy = 0x1,
-    /// Zstd (reserved).
+    /// Zstd (reserved — recognised on read, never emitted).
     Zstd = 0x2,
+    /// Run-length encoding (see [`crate::compress::rle`]).
+    Rle = 0x3,
+    /// LZ77 with a hash-chain match finder (see [`crate::compress::lz`]).
+    Lz = 0x4,
 }
 
 impl CompressionType {
@@ -24,6 +32,8 @@ impl CompressionType {
             0x0 => Some(CompressionType::None),
             0x1 => Some(CompressionType::Snappy),
             0x2 => Some(CompressionType::Zstd),
+            0x3 => Some(CompressionType::Rle),
+            0x4 => Some(CompressionType::Lz),
             _ => None,
         }
     }

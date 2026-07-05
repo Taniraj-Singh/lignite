@@ -35,6 +35,7 @@ use crate::snapshot::{Snapshot, SnapshotRegistry};
 use crate::version::{build_table, VersionSet};
 use crate::wal::LogWriter;
 
+mod backup;
 mod iter;
 pub mod recovery;
 pub mod stats;

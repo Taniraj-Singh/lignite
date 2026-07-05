@@ -17,10 +17,12 @@
 #![allow(clippy::module_inception)]
 #![allow(clippy::new_without_default)]
 
+pub mod archive;
 pub mod batch;
 pub mod cache;
 pub mod comparator;
 pub mod compaction;
+pub mod compress;
 pub mod db;
 pub mod env;
 pub mod error;
@@ -31,6 +33,7 @@ pub mod memtable;
 pub mod options;
 pub mod snapshot;
 pub mod sstable;
+pub mod txn;
 pub mod util;
 pub mod version;
 pub mod wal;
@@ -42,3 +45,4 @@ pub use error::{Error, Result};
 pub use iterator::{InternalIterator, LigniteIterator};
 pub use options::{CompressionType, Options, ReadOptions, WriteOptions};
 pub use snapshot::Snapshot;
+pub use txn::Transaction;

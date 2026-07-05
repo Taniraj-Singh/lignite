@@ -45,5 +45,19 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "block_codec_fuzzer"
+path = "fuzz_targets/block_codec_fuzzer.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "archive_parse_fuzzer"
+path = "fuzz_targets/archive_parse_fuzzer.rs"
+test = false
+doc = false
+bench = false
+
 # Standalone: do not attempt to join the parent package's (absent) workspace.
 [workspace]

@@ -70,8 +70,46 @@ Immediately after each block's bytes:
 trailer := compression_type (u8) crc32c (fixed32, masked)
 ```
 
-`crc32c` covers the block contents plus the compression byte. `compression_type`
-is `0` (none), `1` (snappy, reserved) or `2` (zstd, reserved).
+`crc32c` covers the *stored* block contents (after any compression) plus the
+compression byte. `compression_type` is one of:
+
+| value | codec | status |
+|---|---|---|
+| `0` | none | stored verbatim |
+| `1` | snappy | reserved (recognised on read, never emitted) |
+| `2` | zstd | reserved (recognised on read, never emitted) |
+| `3` | rle | run-length, see below |
+| `4` | lz | LZ77, see below |
+
+A block is only stored under a compressing codec when that codec shrinks it;
+otherwise it falls back to `0`, so the tag always names the codec actually
+applied and a reader never has to trust that compression helped.
+
+### Compression codecs
+
+Both codecs are byte streams the reader bounds against a fixed maximum
+decompressed size; the uncompressed length is *not* stored in the block.
+
+**RLE (`3`)** — a sequence of runs:
+
+```
+run    := header payload
+header := varint( (count << 1) | kind )   ; count >= 1
+kind=0 (literal): count raw bytes follow, emitted verbatim
+kind=1 (repeat):  one byte follows, emitted count times
+```
+
+**LZ (`4`)** — a sequence of tokens:
+
+```
+literal := varint(len << 1 | 0)                 len raw bytes
+match   := varint((len - 4) << 1 | 1) varint(distance)
+```
+
+A match copies `len` bytes from `distance` bytes before the current output
+position (`distance` one-based); the copy is defined byte-by-byte, so an
+overlapping match (`distance < len`) repeats a short pattern. `distance` is bounded
+by the 64 KiB window and validated against the bytes produced so far.
 
 ### Block handle
 
@@ -138,3 +176,27 @@ field := tag (varint) payload
 
 Replaying the MANIFEST applies each edit in order to reconstruct the current
 version's per-level file lists.
+
+## Archive (logical backup)
+
+An archive is a single self-describing byte string capturing a set of key/value
+records, independent of the SSTable layout.
+
+```
+archive := header body_len (fixed32) stored_body crc32c (fixed32, masked)
+header  := magic (8 bytes = "LGNARCH1") version (fixed32) flags (fixed32)
+```
+
+`crc32c` is the masked CRC32C over every byte before it (header through
+`stored_body`). `stored_body` is the record stream below, LZ-compressed when the
+`flags` `COMPRESSED` bit (`0x1`) is set. The record stream is:
+
+```
+record* := ( PUT    (0x01) key(lp) value(lp)
+           | DELETE (0x02) key(lp) )*
+           END (0x00) varint(record_count)
+```
+
+The trailing `record_count` must equal the number of records decoded, and no
+bytes may follow the `END` marker. `version` is `1`; a reader rejects other
+versions rather than guessing.
