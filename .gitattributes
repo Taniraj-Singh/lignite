@@ -2,5 +2,3 @@
 *.sh text eol=lf
 *.rs text eol=lf
 Dockerfile text eol=lf
-*_crash binary
-poc/db_differential_fuzzer_crash binary

@@ -4,14 +4,6 @@ All notable changes to this project are documented here. The format is loosely
 based on [Keep a Changelog](https://keepachangelog.com/), and the project aims to
 follow semantic versioning once it reaches 1.0.
 
-## [Unreleased]
-
-### Known issues
-
-- Reads can return a stale value for a key whose versions are spread across
-  multiple persisted tables. See [`ISSUE.md`](ISSUE.md). Tracked by the failing
-  regression tests in `tests/mvcc_visibility.rs`.
-
 ## [0.4.0]
 
 ### Added

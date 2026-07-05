@@ -3,8 +3,7 @@
 //! These tests drive the public `Db` with each supported [`CompressionType`],
 //! writing enough distinct keys to span many data blocks, then verifying that
 //! point lookups and full scans reproduce exactly what was written — through a
-//! flush and through a compaction. Every key is written once, so these scenarios
-//! are independent of the read-path defect tracked in `ISSUE.md`; they isolate
+//! flush and through a compaction. Each test writes every key once and isolates
 //! the compression codecs and their wiring into the SSTable reader and writer.
 
 use lignite::{CompressionType, Db, LigniteIterator, Options, ReadOptions, WriteOptions};

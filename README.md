@@ -158,12 +158,6 @@ cargo +nightly fuzz run block_codec_fuzzer       # compression codecs: decode + 
 cargo +nightly fuzz run archive_parse_fuzzer     # archive reader on arbitrary bytes
 ```
 
-Reproduce a known crash with a saved input:
-
-```
-cargo +nightly fuzz run db_differential_fuzzer poc/db_differential_fuzzer_crash
-```
-
 ## Configuration
 
 `Options` exposes the usual tunables — `write_buffer_size`, `block_size`,
