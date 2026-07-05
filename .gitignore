@@ -2,3 +2,11 @@
 **/*.rs.bk
 Cargo.lock
 .DS_Store
+
+# Local proof-of-concept / crash reproducers — never commit these (shipping a
+# committed crash input leaks the answer to the fuzzing task).
+/poc/
+*_crash
+*_crash[0-9]
+*.patch
+examples/*poc*.rs

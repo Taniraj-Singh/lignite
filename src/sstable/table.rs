@@ -124,8 +124,14 @@ pub fn read_block(
 ) -> Result<Arc<Vec<u8>>> {
     let offset = handle.offset as usize;
     let size = handle.size as usize;
-    let end = offset
-        .checked_add(size + BLOCK_TRAILER_SIZE)
+    // Compute the block's end offset with fully checked arithmetic. A hostile
+    // handle can carry a `size` near `usize::MAX`, so the intermediate
+    // `size + BLOCK_TRAILER_SIZE` must itself be a checked add: evaluated bare it
+    // overflows and wraps to a tiny `end` that slips past the bounds check below,
+    // after which `file[offset..offset + size]` slices out of range and panics.
+    let end = size
+        .checked_add(BLOCK_TRAILER_SIZE)
+        .and_then(|body_and_trailer| offset.checked_add(body_and_trailer))
         .ok_or_else(|| Error::corruption("block handle overflows file"))?;
     if end > file.len() {
         return Err(Error::corruption("block handle out of range"));
@@ -393,5 +399,41 @@ mod tests {
             // Either the iterator is invalid or reports an error.
             assert!(it.status().is_err() || !it.valid());
         }
+    }
+
+    #[test]
+    fn rejects_overflowing_block_handle() {
+        // Regression for integer-overflow out-of-bounds reads in read_block. A
+        // hostile footer can encode a block handle whose offset/size overflow the
+        // block-bounds computation; before the fix these panicked at
+        // `file[offset..offset + size]` — either with an out-of-range end
+        // (`size == u64::MAX`) or an inverted range (`offset + size` wraps, giving
+        // "slice index starts at N but ends at N-1"). Both must now be rejected.
+        fn footer_with(idx_offset: &[u8], idx_size: &[u8]) -> Vec<u8> {
+            let mut f = Vec::new();
+            f.push(0x00); // metaindex handle: offset varint = 0
+            f.push(0x00); // metaindex handle: size   varint = 0
+            f.extend_from_slice(idx_offset); // index handle: offset varint
+            f.extend_from_slice(idx_size); //   index handle: size   varint
+            f.resize(FOOTER_ENCODED_LENGTH - 8, 0); // zero-pad the handle region
+            f.extend_from_slice(&crate::sstable::format::TABLE_MAGIC_NUMBER.to_le_bytes());
+            assert_eq!(f.len(), FOOTER_ENCODED_LENGTH);
+            f
+        }
+        let u64_max = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01];
+
+        // size == u64::MAX: the `size + BLOCK_TRAILER_SIZE` add overflows.
+        let a = footer_with(&[0x00], &u64_max);
+        assert!(matches!(
+            Table::open(Arc::new(a), icmp(), None, true),
+            Err(Error::Corruption(_))
+        ));
+
+        // offset == u64::MAX: the `offset + (size + trailer)` add overflows.
+        let b = footer_with(&u64_max, &[0x00]);
+        assert!(matches!(
+            Table::open(Arc::new(b), icmp(), None, true),
+            Err(Error::Corruption(_))
+        ));
     }
 }
