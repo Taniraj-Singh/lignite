@@ -141,15 +141,27 @@ impl BlockIter {
     }
 
     /// The full key stored at restart run `index` (its entries have `shared==0`).
+    ///
+    /// Every offset here derives from a restart-array entry, which is
+    /// attacker-controlled in an untrusted block, so each bound is validated: a
+    /// restart offset past the entry region, or a non-shared key length that runs
+    /// past it, yields `None` rather than an out-of-bounds slice.
     fn restart_key(&self, index: usize) -> Option<&[u8]> {
         let offset = self.restart_point(index);
+        if offset >= self.restart_offset {
+            return None;
+        }
         let base = &self.data[offset..self.restart_offset];
         let (_shared, r1) = decode_varint32(base)?;
         let (non_shared, r2) = decode_varint32(r1)?;
         let (_value_len, r3) = decode_varint32(r2)?;
         let header_len = base.len() - r3.len();
         let start = offset + header_len;
-        Some(&self.data[start..start + non_shared as usize])
+        let end = start.checked_add(non_shared as usize)?;
+        if end > self.restart_offset {
+            return None;
+        }
+        Some(&self.data[start..end])
     }
 }
 
