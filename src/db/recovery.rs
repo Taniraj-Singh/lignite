@@ -11,7 +11,7 @@
 //! the highest sequence number it observed.
 
 use crate::batch::WriteBatch;
-use crate::error::Result;
+use crate::error::{Error, Result};
 use crate::key::{InternalKeyComparator, SequenceNumber};
 use crate::memtable::MemTable;
 use crate::wal::LogReader;
@@ -47,7 +47,12 @@ pub fn recover_memtable(
             continue;
         }
         let base = batch.sequence();
-        let last = base + batch.count() as u64 - 1;
+        // `count >= 1` here (empty batches are skipped above), so `count - 1`
+        // cannot underflow; guard the base + span add against a corrupt log whose
+        // sequence number would overflow the u64 sequence space.
+        let last = base
+            .checked_add(batch.count() as u64 - 1)
+            .ok_or_else(|| Error::corruption("recovered batch sequence overflows"))?;
         batch.insert_into(&mut memtable)?;
         if last > max_sequence {
             max_sequence = last;

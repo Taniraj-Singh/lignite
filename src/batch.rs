@@ -138,7 +138,9 @@ impl WriteBatch {
                     return Err(Error::corruption(format!("unknown batch tag {other}")));
                 }
             }
-            seq += 1;
+            seq = seq
+                .checked_add(1)
+                .ok_or_else(|| Error::corruption("batch sequence overflow"))?;
             applied += 1;
         }
         if applied != self.count() {
