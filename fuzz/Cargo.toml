@@ -59,5 +59,33 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "version_edit_fuzzer"
+path = "fuzz_targets/version_edit_fuzzer.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "write_batch_fuzzer"
+path = "fuzz_targets/write_batch_fuzzer.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "wal_recover_fuzzer"
+path = "fuzz_targets/wal_recover_fuzzer.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "sstable_seek_fuzzer"
+path = "fuzz_targets/sstable_seek_fuzzer.rs"
+test = false
+doc = false
+bench = false
+
 # Standalone: do not attempt to join the parent package's (absent) workspace.
 [workspace]

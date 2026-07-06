@@ -3,3 +3,13 @@ fuzzing_engines:
   - libfuzzer
 sanitizers:
   - address
+fuzz_targets:
+  - archive_parse_fuzzer
+  - block_codec_fuzzer
+  - db_differential_fuzzer
+  - sstable_parse_fuzzer
+  - sstable_seek_fuzzer
+  - version_edit_fuzzer
+  - wal_parse_fuzzer
+  - wal_recover_fuzzer
+  - write_batch_fuzzer
